@@ -1,0 +1,228 @@
+<!doctype html>
+
+<html>
+<head>
+
+    <title>WeDeNo for J5</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.1/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.2.8/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
+
+    <style type="text/css" media="screen">
+        @import url('https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i');
+
+        body{
+            margin: 0px;
+            font-family: 'Nunito', sans-serif;
+        }
+        div{
+            box-sizing: border-box;
+        }
+        button, input, select, option{
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .title-bar{
+            position: absolute;
+            width: 100%;
+            height: 24px;
+            background-color: #68000d;
+            z-index: 99;
+            top: 0;
+        }
+        .logo-text{
+            color: white;
+            font-size: 13px;
+            margin: 0;
+            padding: 1px 32px 0 16px;
+            line-height: 24px;
+            font-weight: 200;
+            display: inline-block;
+        }
+
+        .tool-bar{
+            position: absolute;
+            width: 100%;
+            height: 42px;
+            background-color: #a5172a;
+            z-index: 99;
+            top: 24px;
+            padding: 4px 0 0 12px;
+        }
+        .tool-button{
+            width: 32px;
+            height: 32px;
+            background-color: #68000d;
+            border: none;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .tool-button i{
+            font-size: 21px;
+            padding-top: 3px;
+            color: white;
+        }
+        .tool-select{
+            width: 320px;
+            height: 28px;
+            padding: 0 0 0 6px;
+            background-color: white;
+            border: 1px solid #68000d;
+            border-radius: 3px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        #tool_run{
+            position: absolute;
+            right: 48px;
+        }
+        #tool_open{
+            position: absolute;
+            right: 12px;
+        }
+        #j5_editor {
+            position: absolute;
+            top: 66px;
+            bottom: 120px;
+            left: 0;
+            right: 50%;
+            font-size: 14px;
+        }
+        #p5_editor {
+            position: absolute;
+            top: 66px;
+            bottom: 120px;
+            left: 50%;
+            right: 0;
+            font-size: 14px;
+        }
+        #console{
+            position: absolute;
+            width: 100%;
+            height: 120px;
+            bottom: 0;
+            overflow-y: scroll;
+            background-color: #000000;
+            color: white;
+            font-size: 11px;
+            padding: 12px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="title-bar">
+        <div class="logo-text"><b>WeDeNo</b> alpha</div>
+    </div>
+    <div class="tool-bar">
+        <button id="tool_newFile" class="tool-button"><i class="material-icons">note_add</i></button>
+        <select id="tool_ports" class="tool-select"></select>
+        <button id="tool_addPorts" class="tool-button"><i class="material-icons">low_priority</i></button>
+        <button id="tool_run" class="tool-button"><i class="material-icons">file_upload</i></button>
+        <button id="tool_open" class="tool-button"><i class="material-icons">play_circle_outline</i></button>
+    </div>
+
+    <div id="j5_editor"></div>
+    <div id="p5_editor"></div>
+    <div id="console"></div>
+
+
+    <script>
+        var socket = io.connect(window.location.hostname+':45588');
+
+        // Get ports info at startup
+        socket.on('ports', function(data){
+            console.log(data);
+            $('#tool_ports').append($('<option>', {value: data.comName, text: data.comName +": "+ data.manufacturer}));
+        });
+
+        // Console info
+        socket.on('console', function(data){
+            console.log(data);
+            if($('#console').text().split('\n').length>100){
+                $('#console').html(data + '<br/>');
+            }else{
+                $('#console').html($('#console').html() + data + '<br/>');
+            }
+            $('#console').scrollTop($('#console')[0].scrollHeight);
+        });
+
+        // new file
+        $('#tool_newFile').on('click', function(){
+            makeNewFile();
+        });
+
+        // Run code
+        $('#tool_run').on('click', function(){
+            console.log(editorJ5.getValue())
+            console.log(editorP5.getValue())
+            socket.emit('execute', {code: editorJ5.getValue(), sketch: editorP5.getValue()})
+        });
+        $('#tool_open').on('click', function(){
+            window.open('./sketch/')
+        })
+
+
+        // Port Code Addition
+        $('#tool_addPorts').on('click', function(){
+            var _boardType = $('#tool_ports').val();
+            editorJ5.find('pi-io');
+            if(!editorJ5.selection.isEmpty()){
+                editorJ5.removeLines();
+            }
+            editorJ5.find('.Board');
+            if(!editorJ5.selection.isEmpty()){
+                editorJ5.removeLines();
+            }
+
+            if(_boardType == 'raspi'){
+                editorJ5.insert("var PiIO = require('pi-io');\n");
+                editorJ5.insert("var board = new five.Board({io: new PiIO()});\n");
+            }else{
+                editorJ5.insert("var board = new five.Board({port: \"" + _boardType + "\"});\n");
+            }
+
+        })
+
+        // Init editor;
+        var editorJ5 = ace.edit("j5_editor");
+        editorJ5.setTheme("ace/theme/chrome");
+        editorJ5.getSession().setMode("ace/mode/javascript");
+
+        var editorP5 = ace.edit("p5_editor");
+        editorP5.setTheme("ace/theme/chrome");
+        editorP5.getSession().setMode("ace/mode/javascript");
+
+        $('document').ready(function(){
+            loadSavedFile();
+
+            $('#tool_ports').append($('<option>', {value: 'raspi', text:"Raspberry Pi 3"}));
+        });
+
+        function makeNewFile(){
+            editorJ5.setValue(loadFile('./res/default.js'));
+            editorJ5.gotoLine(editorJ5.session.getLength());
+        }
+
+        function loadSavedFile(){
+            editorJ5.setValue(loadFile('./res/body.js'));
+            editorJ5.gotoLine(editorJ5.session.getLength());
+            editorP5.setValue(loadFile('./sketch/sketch.js'));
+            editorP5.gotoLine(editorP5.session.getLength());
+        }
+
+        function loadFile(_filePath){
+            var _listPath =_filePath;
+            var xmlhttp = new XMLHttpRequest();
+        	xmlhttp.open("GET", _listPath, false);
+        	xmlhttp.send(null);
+
+            return xmlhttp.responseText;
+        }
+
+    </script>
+</body>
+</html>
