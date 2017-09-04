@@ -1,11 +1,9 @@
 {
-  "name": "WeDeNo",
-  "version": "1.0.0",
+  "name": "wedeno",
+  "version": "0.1.0",
   "description": "",
-  "main": "index.js",
-  "directories": {
-    "lib": "lib"
-  },
+  "main": "app.js",
+  "directories": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,6 +14,6 @@
     "johnny-five": "^0.11.6",
     "serialport": "^5.0.0",
     "socket.io": "^2.0.3",
-    "socket.io-client": "^2.0.3"
+    "pi-io": "^0.5.0"
   }
 }
