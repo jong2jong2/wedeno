@@ -1,2 +1,0 @@
-# wedeno
-Wedeno IDE
