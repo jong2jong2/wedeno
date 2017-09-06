@@ -7,13 +7,19 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jong2jong2/wedeno.git"
+  },
   "author": "Han-Jong Kim",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.15.4",
-    "johnny-five": "^0.11.6",
-    "serialport": "^5.0.0",
     "socket.io": "^2.0.3",
+    "johnny-five": "^0.11.6",
+    "serialport": "^5.0.0"
+  },
+  "optionalDependencies": {
     "pi-io": "^0.5.0"
   }
 }
